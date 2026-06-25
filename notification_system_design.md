@@ -544,3 +544,28 @@ function email_worker(notification):
 ## Why This Is Better
 
 This design is faster because workers process many notifications in parallel. It is also safer because failures are visible, retryable, and limited to only the affected students. The database remains the permanent record, while queues handle large-volume delivery without overwhelming the API server.
+
+# Stage 6
+
+For the Priority Inbox, I ranked notifications using two factors: notification type and recency. The type weight is:
+
+```text
+Placement = 3
+Result = 2
+Event = 1
+```
+
+If two notifications have the same type weight, the newer one gets higher priority. This keeps placement-related notifications at the top while still respecting recent updates.
+
+I implemented the solution in `priority_inbox.js`. It fetches notifications from the given API, applies the priority rule, and prints the top 10 notifications.
+
+To maintain the top 10 efficiently when new notifications keep coming in, I used a min-heap of size 10. The heap keeps the weakest notification at the top. When a new notification arrives, it is compared with the weakest item. If it has higher priority, it replaces that item. This avoids sorting the full list every time.
+
+The cost is:
+
+```text
+Building top 10 from N notifications: O(N log 10), practically close to O(N)
+Adding one new notification later: O(log 10), practically constant time
+```
+
+This approach is fast, simple, and suitable for a real-time notification inbox.
