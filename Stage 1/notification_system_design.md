@@ -71,3 +71,40 @@ For errors:
 | Mark one as read | PATCH | `/api/v1/notifications/{notificationId}/read` |
 | Mark all as read | PATCH | `/api/v1/notifications/read-all` |
 | Delete/dismiss notification | DELETE | `/api/v1/notifications/{notificationId}` |
+
+## Sample API Contracts
+
+### 1. Get Notifications
+
+```http
+GET /api/v1/notifications?page=1&limit=20&status=all
+```
+
+Response:
+
+```json
+{
+  "success": true,
+  "message": "Notifications fetched successfully",
+  "data": {
+    "notifications": [
+      {
+        "id": "notif_1001",
+        "title": "Payment Successful",
+        "message": "Your payment has been completed successfully.",
+        "type": "payment",
+        "priority": "normal",
+        "isRead": false,
+        "actionUrl": "/payments/txn_8901",
+        "createdAt": "2026-06-25T09:30:00Z",
+        "readAt": null
+      }
+    ],
+    "pagination": {
+      "page": 1,
+      "limit": 20,
+      "total": 30
+    }
+  }
+}
+```
