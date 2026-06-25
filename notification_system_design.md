@@ -451,3 +451,34 @@ After login, the client should open a WebSocket connection. New notifications ca
 
 **Tradeoff:** WebSocket improves real-time experience and reduces polling, but it requires connection management and fallback handling for disconnected users.
 
+## 3. Fetch Only What Is Needed
+
+Do not fetch all notifications. Load only the latest records first.
+
+```sql
+SELECT id, title, message, notificationType, createdAt
+FROM notifications
+WHERE studentID = $1
+ORDER BY createdAt DESC
+LIMIT 20;
+```
+
+Older notifications can be loaded using pagination or infinite scroll.
+
+**Tradeoff:** This reduces DB and network load, but the front end must handle pagination properly.
+
+## 4. Use Conditional Fetching
+
+The client can send the latest notification timestamp it already has.
+
+```http
+GET /api/v1/notifications?after=2026-06-25T10:00:00Z
+```
+
+The backend returns only new notifications after that time.
+
+**Tradeoff:** This avoids repeated full fetches, but the client must maintain the last fetched timestamp correctly.
+
+## Final Approach
+
+The best solution is not one single change. I would keep PostgreSQL as the source of truth, use Redis for fast repeated reads, push new notifications through WebSocket, and fetch only limited records from the API. This reduces database pressure while keeping the notification experience fast and reliable.
