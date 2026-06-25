@@ -503,3 +503,44 @@ The reliable approach is to create a notification campaign, save notification re
 
 Saving to DB and sending email should not happen as one combined operation. DB save is the source of truth and should happen first. Email is an external side effect, so it should be handled asynchronously with retries.
 
+## Revised Pseudocode
+
+```text
+function notify_all(student_ids, message):
+    campaign_id = create_campaign(message)
+
+    for batch in split(student_ids, size=1000):
+        notifications = []
+
+        for student_id in batch:
+            notifications.append({
+                campaign_id: campaign_id,
+                student_id: student_id,
+                message: message,
+                status: "pending"
+            })
+
+        bulk_insert_notifications(notifications)
+        publish_queue("notification.created", notifications)
+
+function notification_worker(job):
+    for notification in job.notifications:
+        push_to_app(notification.student_id, notification.message)
+        publish_queue("email.send", notification)
+
+function email_worker(notification):
+    try:
+        send_email(notification.student_id, notification.message)
+        mark_email_status(notification.id, "sent")
+    except error:
+        increase_retry_count(notification.id)
+
+        if retry_count < 3:
+            publish_queue_later("email.send", notification)
+        else:
+            mark_email_status(notification.id, "failed")
+```
+
+## Why This Is Better
+
+This design is faster because workers process many notifications in parallel. It is also safer because failures are visible, retryable, and limited to only the affected students. The database remains the permanent record, while queues handle large-volume delivery without overwhelming the API server.
