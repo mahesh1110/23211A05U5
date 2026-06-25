@@ -287,3 +287,79 @@ WHERE deleted_at IS NULL;
 | Large table size | Partition table by month using `created_at` |
 | High real-time load | Use a message queue like Kafka/RabbitMQ before pushing through WebSocket |
 
+## Queries Based on REST APIs
+
+### 1. Get Notifications
+
+```sql
+SELECT id, title, message, type, priority, action_url, is_read, created_at, read_at
+FROM notifications
+WHERE user_id = $1
+  AND deleted_at IS NULL
+ORDER BY created_at DESC
+LIMIT $2 OFFSET $3;
+```
+
+### 2. Get Unread Notifications
+
+```sql
+SELECT id, title, message, type, priority, action_url, created_at
+FROM notifications
+WHERE user_id = $1
+  AND is_read = FALSE
+  AND deleted_at IS NULL
+ORDER BY created_at DESC;
+```
+
+### 3. Get Unread Count
+
+```sql
+SELECT COUNT(*) AS unread_count
+FROM notifications
+WHERE user_id = $1
+  AND is_read = FALSE
+  AND deleted_at IS NULL;
+```
+
+### 4. Mark One Notification as Read
+
+```sql
+UPDATE notifications
+SET is_read = TRUE,
+    read_at = CURRENT_TIMESTAMP
+WHERE id = $1
+  AND user_id = $2
+  AND deleted_at IS NULL;
+```
+
+### 5. Mark All Notifications as Read
+
+```sql
+UPDATE notifications
+SET is_read = TRUE,
+    read_at = CURRENT_TIMESTAMP
+WHERE user_id = $1
+  AND is_read = FALSE
+  AND deleted_at IS NULL;
+```
+
+### 6. Dismiss Notification
+
+```sql
+UPDATE notifications
+SET deleted_at = CURRENT_TIMESTAMP
+WHERE id = $1
+  AND user_id = $2;
+```
+
+### 7. Create Notification
+
+```sql
+INSERT INTO notifications (user_id, title, message, type, priority, action_url)
+VALUES ($1, $2, $3, $4, $5, $6)
+RETURNING id, title, message, type, priority, action_url, is_read, created_at;
+```
+
+## Real-Time Storage Flow
+
+When a notification is inserted into PostgreSQL, the backend can publish the same notification to a queue. A WebSocket service then pushes it to the correct logged-in user. This keeps storage reliable and real-time delivery fast.
