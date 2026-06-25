@@ -380,3 +380,46 @@ ORDER BY createdAt ASC;
 
 With 5,000,000 notifications, the database may scan a large number of rows, filter by `studentID` and `isRead`, then sort the result by `createdAt`. Also, `SELECT *` fetches every column even if the API needs only a few fields.
 
+## Better Approach
+
+Create a composite index that matches the filter and sort pattern:
+
+```sql
+CREATE INDEX idx_notifications_student_unread_created
+ON notifications (studentID, isRead, createdAt);
+```
+
+Then fetch only required columns:
+
+```sql
+SELECT id, title, message, notificationType, createdAt
+FROM notifications
+WHERE studentID = 1042
+  AND isRead = false
+ORDER BY createdAt ASC
+LIMIT 50;
+```
+
+The expected cost becomes close to `O(log N + K)`, where `N` is total rows and `K` is the number of unread notifications returned. Without a useful index, it can behave closer to `O(N log N)` because of scanning and sorting.
+
+## Should We Index Every Column?
+
+No. Indexing every column is not effective. Indexes improve reads, but they also consume storage and slow down inserts, updates, and deletes. Indexes should be created based on real query patterns, such as `(studentID, isRead, createdAt)` for this API.
+
+## Query for Placement Notifications in Last 7 Days
+
+```sql
+SELECT DISTINCT studentID
+FROM notifications
+WHERE notificationType = 'Placement'
+  AND createdAt >= CURRENT_TIMESTAMP - INTERVAL '7 days';
+```
+
+For this query, the useful index would be:
+
+```sql
+CREATE INDEX idx_notifications_type_created_student
+ON notifications (notificationType, createdAt, studentID);
+```
+
+This helps the database quickly find recent placement notifications without scanning the full notifications table.
