@@ -108,3 +108,84 @@ Response:
   }
 }
 ```
+### 2. Mark Notification as Read
+
+```http
+PATCH /api/v1/notifications/{notificationId}/read
+```
+
+Response:
+
+```json
+{
+  "success": true,
+  "message": "Notification marked as read",
+  "data": {
+    "id": "notif_1001",
+    "isRead": true,
+    "readAt": "2026-06-25T10:00:00Z"
+  }
+}
+```
+
+### 3. Mark All as Read
+
+```http
+PATCH /api/v1/notifications/read-all
+```
+
+Request:
+
+```json
+{
+  "before": "2026-06-25T10:00:00Z"
+}
+```
+
+Response:
+
+```json
+{
+  "success": true,
+  "message": "All notifications marked as read",
+  "data": {
+    "updatedCount": 8
+  }
+}
+```
+
+### 4. Delete Notification
+
+```http
+DELETE /api/v1/notifications/{notificationId}
+```
+
+Response:
+
+```json
+{
+  "success": true,
+  "message": "Notification dismissed successfully",
+  "data": {
+    "notificationId": "notif_1001"
+  }
+}
+```
+
+### 5. Get Unread Count
+
+```http
+GET /api/v1/notifications/unread-count
+```
+
+Response:
+
+```json
+{
+  "success": true,
+  "message": "Unread count fetched successfully",
+  "data": {
+    "unreadCount": 5
+  }
+}
+```
