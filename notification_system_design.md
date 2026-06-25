@@ -363,3 +363,20 @@ RETURNING id, title, message, type, priority, action_url, is_read, created_at;
 ## Real-Time Storage Flow
 
 When a notification is inserted into PostgreSQL, the backend can publish the same notification to a queue. A WebSocket service then pushes it to the correct logged-in user. This keeps storage reliable and real-time delivery fast.
+
+# Stage 3
+
+The query is logically correct if the requirement is to fetch all unread notifications of student `1042`. However, it is not ideal for production scale.
+
+```sql
+SELECT *
+FROM notifications
+WHERE studentID = 1042
+  AND isRead = false
+ORDER BY createdAt ASC;
+```
+
+## Why It Is Slow
+
+With 5,000,000 notifications, the database may scan a large number of rows, filter by `studentID` and `isRead`, then sort the result by `createdAt`. Also, `SELECT *` fetches every column even if the API needs only a few fields.
+
