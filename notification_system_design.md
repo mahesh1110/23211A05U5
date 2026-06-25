@@ -569,3 +569,23 @@ Adding one new notification later: O(log 10), practically constant time
 ```
 
 This approach is fast, simple, and suitable for a real-time notification inbox.
+
+# Stage 7
+
+For the frontend, I created `notification-app-fe` as a React application using Material UI. The app runs on `http://localhost:3000` and has two main pages:
+
+1. **All Notifications** - shows paginated notifications, supports type filtering, and marks notifications as new or viewed.
+2. **Priority Notifications** - shows top `n` notifications with filters for notification type and limits such as 10, 15, and 20.
+
+The protected API is called through the Vite dev server proxy. The proxy reads the token from the root `.env` file and attaches it to requests, so the token is not exposed in the browser code.
+
+I also integrated frontend logging around API success, API failure, page actions, and viewed-state changes. The viewed state is maintained using `localStorage`, which is suitable here because the requirement asks for a frontend way to distinguish new and already viewed notifications.
+
+The priority logic follows:
+
+```text
+Placement > Result > Event
+For same type, latest notification comes first.
+```
+
+This keeps the UI simple, responsive, and focused on the most important notifications without cluttering the page.
