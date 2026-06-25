@@ -189,3 +189,59 @@ Response:
   }
 }
 ```
+## Real-Time Notification Design
+
+For real-time updates, I would use WebSocket. After login, the client connects to:
+
+```http
+GET /ws/notifications
+```
+
+The access token should be verified before the connection is accepted. When a new notification is created, the server pushes this message:
+
+```json
+{
+  "event": "notification.created",
+  "data": {
+    "id": "notif_1002",
+    "title": "New Login Detected",
+    "message": "A new login was detected on your account.",
+    "type": "security",
+    "priority": "high",
+    "isRead": false,
+    "createdAt": "2026-06-25T10:30:00Z"
+  }
+}
+```
+
+The server can also send count updates:
+
+```json
+{
+  "event": "notification.unread_count_updated",
+  "data": {
+    "unreadCount": 6
+  }
+}
+```
+
+If WebSocket is not supported, Server-Sent Events can be used as a fallback through:
+
+```http
+GET /api/v1/notifications/stream
+```
+
+## Status Codes
+
+| Code | Meaning |
+|---|---|
+| 200 | Success |
+| 400 | Bad request |
+| 401 | Unauthorized |
+| 403 | Forbidden |
+| 404 | Notification not found |
+| 500 | Server error |
+
+## Note
+
+The backend should identify the user from the access token, so normal notification APIs do not need `userId` in the request. This also prevents users from accessing another user's notifications.
