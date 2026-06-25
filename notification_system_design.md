@@ -482,3 +482,24 @@ The backend returns only new notifications after that time.
 ## Final Approach
 
 The best solution is not one single change. I would keep PostgreSQL as the source of truth, use Redis for fast repeated reads, push new notifications through WebSocket, and fetch only limited records from the API. This reduces database pressure while keeping the notification experience fast and reliable.
+
+# Stage 5
+
+The current implementation is simple but not reliable for 50,000 students. It runs everything in one loop, so one slow email API or one failure can delay or break the whole process. It also mixes three different responsibilities: sending email, saving to DB, and pushing in-app notifications.
+
+## Shortcomings
+
+1. No retry mechanism for failed emails.
+2. No tracking of which students succeeded or failed.
+3. The process is slow because work is done one by one.
+4. If the server crashes midway, remaining students may never receive the notification.
+5. Email sending and DB saving are tightly coupled.
+
+If `send_email` fails for 200 students, those failures should be stored and retried. We should not rerun the whole campaign blindly, because that may send duplicate emails to students who already received it.
+
+## Better Design
+
+The reliable approach is to create a notification campaign, save notification records in DB, and publish jobs to a queue. Separate workers can process email and in-app delivery in parallel.
+
+Saving to DB and sending email should not happen as one combined operation. DB save is the source of truth and should happen first. Email is an external side effect, so it should be handled asynchronously with retries.
+
