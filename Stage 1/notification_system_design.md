@@ -60,3 +60,14 @@ For errors:
   "readAt": null
 }
 ```
+## REST Endpoints
+
+| Action | Method | Endpoint |
+|---|---|---|
+| Get notifications | GET | `/api/v1/notifications?page=1&limit=20&status=all` |
+| Get unread notifications | GET | `/api/v1/notifications?status=unread` |
+| Get unread count | GET | `/api/v1/notifications/unread-count` |
+| Get one notification | GET | `/api/v1/notifications/{notificationId}` |
+| Mark one as read | PATCH | `/api/v1/notifications/{notificationId}/read` |
+| Mark all as read | PATCH | `/api/v1/notifications/read-all` |
+| Delete/dismiss notification | DELETE | `/api/v1/notifications/{notificationId}` |
