@@ -245,3 +245,45 @@ GET /api/v1/notifications/stream
 ## Note
 
 The backend should identify the user from the access token, so normal notification APIs do not need `userId` in the request. This also prevents users from accessing another user's notifications.
+
+# Stage 2
+
+## Persistent Storage Choice
+
+I would use **PostgreSQL** for storing notifications. Notifications need reliable storage, filtering by user, read/unread status, sorting by time, and safe updates. PostgreSQL fits well because it supports transactions, indexing, JSON fields if needed, and strong consistency.
+
+## Database Schema
+
+```sql
+CREATE TABLE notifications (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  user_id UUID NOT NULL,
+  title VARCHAR(150) NOT NULL,
+  message TEXT NOT NULL,
+  type VARCHAR(50) NOT NULL,
+  priority VARCHAR(20) DEFAULT 'normal',
+  action_url TEXT,
+  is_read BOOLEAN DEFAULT FALSE,
+  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  read_at TIMESTAMP NULL,
+  deleted_at TIMESTAMP NULL
+);
+
+CREATE INDEX idx_notifications_user_created
+ON notifications (user_id, created_at DESC);
+
+CREATE INDEX idx_notifications_user_unread
+ON notifications (user_id, is_read)
+WHERE deleted_at IS NULL;
+```
+
+## Problems as Data Increases and Solutions
+
+| Problem | Solution |
+|---|---|
+| Slow notification listing | Add indexes on `user_id`, `created_at`, and `is_read` |
+| Too many old records | Archive or delete old notifications after a fixed retention period |
+| Expensive unread count | Cache unread count in Redis and update it when read status changes |
+| Large table size | Partition table by month using `created_at` |
+| High real-time load | Use a message queue like Kafka/RabbitMQ before pushing through WebSocket |
+
