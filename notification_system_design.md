@@ -423,3 +423,31 @@ ON notifications (notificationType, createdAt, studentID);
 ```
 
 This helps the database quickly find recent placement notifications without scanning the full notifications table.
+
+# Stage 4
+
+Fetching notifications from the database on every page load is wasteful. Most of the time, notifications do not change between two page visits, so repeatedly hitting the DB creates unnecessary load and slows down the user experience.
+
+## Suggested Solution
+
+I would use a mix of **cache + real-time updates + pagination**.
+
+## 1. Cache Notification Count and Recent Notifications
+
+Store unread count and latest notifications in Redis.
+
+```text
+Key: user:1042:unread_count
+Key: user:1042:recent_notifications
+```
+
+The API first checks Redis. If data is available, it returns from cache. If not, it reads from DB and refreshes the cache.
+
+**Tradeoff:** Cache makes reads much faster, but it adds cache invalidation work. Whenever a notification is created or marked as read, Redis must also be updated.
+
+## 2. Use WebSocket Instead of Fetching Every Time
+
+After login, the client should open a WebSocket connection. New notifications can be pushed directly to the student instead of waiting for the next page load.
+
+**Tradeoff:** WebSocket improves real-time experience and reduces polling, but it requires connection management and fallback handling for disconnected users.
+
